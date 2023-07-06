@@ -2,9 +2,11 @@ using Cronos;
 using Microsoft.Graph;
 using Microsoft.Identity.Client;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.IO;
 using System.Net.Http.Headers;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace SharepointWorker
@@ -22,10 +24,15 @@ namespace SharepointWorker
         {
 
             // Authentication
-            var app = ConfidentialClientApplicationBuilder.Create("694e9844-f1f6-4ea5-ab2b-43e2e7bddd6b")
-                .WithClientSecret("UWW8Q~WYrY3QzNgRI55wXmOebSVsBinItsC_iaTP")
-                .WithAuthority(AzureCloudInstance.AzurePublic, "0ff63586-3b7a-4f81-a766-7409f1ba5ae7")
-                .Build();
+            //var app = ConfidentialClientApplicationBuilder.Create("694e9844-f1f6-4ea5-ab2b-43e2e7bddd6b")
+            //    .WithClientSecret("UWW8Q~WYrY3QzNgRI55wXmOebSVsBinItsC_iaTP")
+            //    .WithAuthority(AzureCloudInstance.AzurePublic, "0ff63586-3b7a-4f81-a766-7409f1ba5ae7")
+            //    .Build();
+
+            var app = ConfidentialClientApplicationBuilder.Create("a06c2c16-7079-463a-9c44-3bba0c62016c")
+    .WithClientSecret("STh8Q~AB3C00lwL_D6A5DQrSzmiBuju.035MMbaE")
+    .WithAuthority(AzureCloudInstance.AzurePublic, "dcc867ff-f3cc-40f3-8e63-c33b8872a692")
+    .Build();
             while (!stoppingToken.IsCancellationRequested)
             {
                 _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
@@ -41,7 +48,7 @@ namespace SharepointWorker
 
                     var accessToken = result.AccessToken;
 
-                    string siteUrl = "https://graph.microsoft.com/v1.0/sites/avanade.sharepoint.com:/sites/Fibrasil-files";
+                    string siteUrl = "https://graph.microsoft.com/v1.0/sites/vx65k.sharepoint.com:/sites/fibrasil";
                     HttpClient client = new HttpClient();
                     HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, siteUrl);
                     request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
@@ -67,6 +74,35 @@ namespace SharepointWorker
                     var item = JsonConvert.DeserializeObject<dynamic>(responseBody);
                     string itemId = item.id;
 
+                    string sheetName = "Sheet1";  // nome da planilha
+                    string rangeAddress = "A1:B2";  // intervalo que deseja ler
+                    string rangeUrl = $"https://graph.microsoft.com/v1.0/sites/{siteId}/drives/{driveId}/items/{itemId}/workbook/worksheets/{sheetName}/range(address='{rangeAddress}')";
+                    request = new HttpRequestMessage(HttpMethod.Get, rangeUrl);
+                    request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+                    response = await client.SendAsync(request);
+                    responseBody = await response.Content.ReadAsStringAsync();
+                    var range = JsonConvert.DeserializeObject<dynamic>(responseBody);
+                    JArray rangeValues = range.text;
+                    foreach (var value in rangeValues)
+                    {
+                        Console.WriteLine(value);
+                    }
+                    // valores do intervalo
+
+                    var updateValues = new
+                    {
+                        values = new string[][]
+    {
+        new string[] { "New data 4", "New data 3" },
+        new string[] { "New data 2", "New data 1" }
+    }
+                    };
+                    request = new HttpRequestMessage(HttpMethod.Patch, rangeUrl)
+                    {
+                        Content = new StringContent(JsonConvert.SerializeObject(updateValues), Encoding.UTF8, "application/json")
+                    };
+                    request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+                    response = await client.SendAsync(request);
 
                 }
                 catch (Exception ex)
