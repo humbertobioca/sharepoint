@@ -29,16 +29,19 @@ namespace SharepointWorker
             //    .WithAuthority(AzureCloudInstance.AzurePublic, "0ff63586-3b7a-4f81-a766-7409f1ba5ae7")
             //    .Build();
 
-            var app = ConfidentialClientApplicationBuilder.Create("a06c2c16-7079-463a-9c44-3bba0c62016c")
-    .WithClientSecret("STh8Q~AB3C00lwL_D6A5DQrSzmiBuju.035MMbaE")
-    .WithAuthority(AzureCloudInstance.AzurePublic, "dcc867ff-f3cc-40f3-8e63-c33b8872a692")
-    .Build();
+            
             while (!stoppingToken.IsCancellationRequested)
             {
                 _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
 
                 try
                 {
+
+                    var app = ConfidentialClientApplicationBuilder.Create("a06c2c16-7079-463a-9c44-3bba0c62016c")
+                        .WithClientSecret("STh8Q~AB3C00lwL_D6A5DQrSzmiBuju.035MMbaE")
+                        .WithAuthority(AzureCloudInstance.AzurePublic, "dcc867ff-f3cc-40f3-8e63-c33b8872a692")
+                        .Build();
+
                     List<string> scopes = new List<string>
                     {
                         "https://graph.microsoft.com/.default"
@@ -75,56 +78,102 @@ namespace SharepointWorker
                     string itemId = item.id;
 
                     string sheetName = "Sheet1";  // nome da planilha
-                    string rangeAddress = "A1:B2";  // intervalo que deseja ler
-                    string rangeUrl = $"https://graph.microsoft.com/v1.0/sites/{siteId}/drives/{driveId}/items/{itemId}/workbook/worksheets/{sheetName}/range(address='{rangeAddress}')";
+                    string rangeUrl = $"https://graph.microsoft.com/v1.0/sites/{siteId}/drives/{driveId}/items/{itemId}/workbook/worksheets/{sheetName}/usedRange";
                     request = new HttpRequestMessage(HttpMethod.Get, rangeUrl);
                     request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
                     response = await client.SendAsync(request);
                     responseBody = await response.Content.ReadAsStringAsync();
                     var range = JsonConvert.DeserializeObject<dynamic>(responseBody);
                     JArray rangeValues = range.text;
-                    foreach (var value in rangeValues)
+                    int statusColumnIndex = -1;
+                    for (int i = 0; i < ((JArray)rangeValues[0]).Count; i++)
                     {
-                        Console.WriteLine(value);
+                        if (rangeValues[0][i].ToString() == "status")
+                        {
+                            statusColumnIndex = i;
+                            break;
+                        }
                     }
-                    // valores do intervalo
 
-                    var updateValues = new
+                    if (statusColumnIndex == -1)
                     {
-                        values = new string[][]
-    {
-        new string[] { "New data 4", "New data 3" },
-        new string[] { "New data 2", "New data 1" }
-    }
-                    };
-                    request = new HttpRequestMessage(HttpMethod.Patch, rangeUrl)
-                    {
-                        Content = new StringContent(JsonConvert.SerializeObject(updateValues), Encoding.UTF8, "application/json")
-                    };
-                    request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-                    response = await client.SendAsync(request);
+                        throw new Exception("Coluna 'status' não encontrada");
+                    }
 
+                    List<int> rowsToProcess = new List<int>();
+                    for (int i = 1; i < rangeValues.Count; i++)  // começa em 1 para pular a linha de cabeçalho
+                    {
+                        if (rangeValues[i][statusColumnIndex].ToString() == "A PROCESSAR")
+                        {
+                            rowsToProcess.Add(i);
+                        }
+                    }
+
+                    int batchSize = 20;  // definir o tamanho do lote como 20
+                    int totalBatches = (int)Math.Ceiling((double)rowsToProcess.Count / batchSize);  // calculando o total de lotes
+
+                    for (int i = 0; i < totalBatches; i++)
+                    {
+                        List<string> requests = new List<string>();
+                        for (int j = i * batchSize; j < Math.Min(rowsToProcess.Count, (i + 1) * batchSize); j++)
+                        {
+                            int row = rowsToProcess[j];
+                            string columnLetter = ColumnLetter(statusColumnIndex);
+                            string cellAddress = $"{columnLetter}{row + 1}";
+                            string updateUrl = $"/sites/{siteId}/drives/{driveId}/items/{itemId}/workbook/worksheets/{sheetName}/range(address='{cellAddress}')";
+
+                            var updateValues = new
+                            {
+                                values = new string[][]
+                                {
+                                    new string[] { "EM PROCESSAMENTO" }
+                                }
+                            };
+                            var updateValuesJson = JsonConvert.SerializeObject(updateValues);
+                            string requestContent = $"{{\"id\":\"{j}\",\"method\":\"PATCH\",\"url\":\"{updateUrl}\",\"headers\":{{\"Content-Type\":\"application/json\"}},\"body\":{updateValuesJson}}}";
+                            requests.Add(requestContent);
+                        }
+                        string batchContent = $"{{\"requests\":[{string.Join(",", requests)}]}}";
+                        HttpRequestMessage batchRequest = new HttpRequestMessage(HttpMethod.Post, "https://graph.microsoft.com/v1.0/$batch")
+                        {
+                            Content = new StringContent(batchContent, Encoding.UTF8, "application/json")
+                        };
+                        batchRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+                        HttpResponseMessage batchResponse = await client.SendAsync(batchRequest);
+                        string batchResponseContent = await batchResponse.Content.ReadAsStringAsync();
+                        var batchResponseJson = JsonConvert.DeserializeObject<dynamic>(batchResponseContent);
+                        foreach (var batchResponset in batchResponseJson.responses)
+                        {
+                            if (batchResponset.status >= 400)
+                            {
+                                Console.WriteLine($"Request failed: {batchResponset.status} {batchResponset.body.error.message}");
+                            }
+                        }
+                    }
                 }
                 catch (Exception ex)
                 {
                     Console.Error.WriteLine($"Error uploading file: {ex.Message}");
                 }
-                await Task.Delay(CalculateNextDelay(), stoppingToken);
+                await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
 
             }
         }
-        private TimeSpan CalculateNextDelay()
+
+        public static string ColumnLetter(int intCol)
         {
-            var cronExpression = CronExpression.Parse("*/5 * * * *");  // Executa a cada 5 minutos
-            var next = cronExpression.GetNextOccurrence(DateTime.Now);
+            intCol++;
+            var intFirstLetter = ((intCol) / 676) + 64;
+            var intSecondLetter = ((intCol % 676) / 26) + 64;
+            var intThirdLetter = (intCol % 26) + 65;
 
-            if (next.HasValue)
-            {
-                return next.Value - DateTime.Now;
-            }
+            var firstLetter = (intFirstLetter > 64) ? (char)intFirstLetter : ' ';
+            var secondLetter = (intSecondLetter > 64) ? (char)intSecondLetter : ' ';
+            var thirdLetter = (char)intThirdLetter;
 
-            return TimeSpan.FromMinutes(30);
+            return string.Concat(firstLetter, secondLetter, thirdLetter).Trim();
         }
+
 
     }
 }
