@@ -1,11 +1,12 @@
 {
   "version": 2,
-  "dgSpecHash": "2lz/ZOenQS5KEtDAiAJ9ATHfeVB5QP+7piph15BZseXCEgOvkOsxfoOTPe78olpFKQmXJWpyZkMSsTVg3IwyMQ==",
+  "dgSpecHash": "xBrHVElHDCvZL6TJD8OoelShG3HFvgdlk1ukg2zRFtLJ1e4RBCc2wB3G9r9LDNn+xS/m/wIEhToG8uhr1InunQ==",
   "success": true,
   "projectFilePath": "C:\\Users\\humberto.bioca\\source\\repos\\SharepointWorker\\SharepointWorker\\SharepointWorker.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\humberto.bioca\\.nuget\\packages\\azure.core\\1.33.0\\azure.core.1.33.0.nupkg.sha512",
     "C:\\Users\\humberto.bioca\\.nuget\\packages\\cronos\\0.7.1\\cronos.0.7.1.nupkg.sha512",
+    "C:\\Users\\humberto.bioca\\.nuget\\packages\\microsoft.aspnet.webapi.client\\5.2.9\\microsoft.aspnet.webapi.client.5.2.9.nupkg.sha512",
     "C:\\Users\\humberto.bioca\\.nuget\\packages\\microsoft.bcl.asyncinterfaces\\1.1.1\\microsoft.bcl.asyncinterfaces.1.1.1.nupkg.sha512",
     "C:\\Users\\humberto.bioca\\.nuget\\packages\\microsoft.csharp\\4.5.0\\microsoft.csharp.4.5.0.nupkg.sha512",
     "C:\\Users\\humberto.bioca\\.nuget\\packages\\microsoft.extensions.configuration\\6.0.0\\microsoft.extensions.configuration.6.0.0.nupkg.sha512",
@@ -54,6 +55,7 @@
     "C:\\Users\\humberto.bioca\\.nuget\\packages\\microsoft.visualstudio.azure.containers.tools.targets\\1.18.1\\microsoft.visualstudio.azure.containers.tools.targets.1.18.1.nupkg.sha512",
     "C:\\Users\\humberto.bioca\\.nuget\\packages\\netstandard.library\\2.0.3\\netstandard.library.2.0.3.nupkg.sha512",
     "C:\\Users\\humberto.bioca\\.nuget\\packages\\newtonsoft.json\\13.0.3\\newtonsoft.json.13.0.3.nupkg.sha512",
+    "C:\\Users\\humberto.bioca\\.nuget\\packages\\newtonsoft.json.bson\\1.0.1\\newtonsoft.json.bson.1.0.1.nupkg.sha512",
     "C:\\Users\\humberto.bioca\\.nuget\\packages\\system.collections\\4.3.0\\system.collections.4.3.0.nupkg.sha512",
     "C:\\Users\\humberto.bioca\\.nuget\\packages\\system.diagnostics.diagnosticsource\\6.0.0\\system.diagnostics.diagnosticsource.6.0.0.nupkg.sha512",
     "C:\\Users\\humberto.bioca\\.nuget\\packages\\system.diagnostics.eventlog\\6.0.0\\system.diagnostics.eventlog.6.0.0.nupkg.sha512",

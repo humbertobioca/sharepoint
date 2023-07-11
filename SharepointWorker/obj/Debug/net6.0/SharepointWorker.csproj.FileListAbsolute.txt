@@ -80,3 +80,5 @@ C:\Users\humberto.bioca\source\repos\SharepointWorker\SharepointWorker\obj\Debug
 C:\Users\humberto.bioca\source\repos\SharepointWorker\SharepointWorker\obj\Debug\net6.0\SharepointWorker.genruntimeconfig.cache
 C:\Users\humberto.bioca\source\repos\SharepointWorker\SharepointWorker\obj\Debug\net6.0\ref\SharepointWorker.dll
 C:\Users\humberto.bioca\source\repos\SharepointWorker\SharepointWorker\bin\Debug\net6.0\Newtonsoft.Json.dll
+C:\Users\humberto.bioca\source\repos\SharepointWorker\SharepointWorker\bin\Debug\net6.0\System.Net.Http.Formatting.dll
+C:\Users\humberto.bioca\source\repos\SharepointWorker\SharepointWorker\bin\Debug\net6.0\Newtonsoft.Json.Bson.dll
